@@ -5,6 +5,7 @@ use std::error::Error;
 
 mod parse;
 mod write;
+mod yaml;
 
 type AnyError = Box<dyn Error>;
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
@@ -68,12 +69,24 @@ pub struct Float(u32, Endian);
 #[derive(Debug, PartialEq, Eq, Clone, Hash, Copy)]
 pub struct Double(u64, Endian);
 
+impl From<f32> for Float {
+    fn from(float: f32) -> Self {
+        Self(u32::from_be_bytes(float.to_be_bytes()), Endian::Big)
+    }
+}
+
 impl Into<f32> for &Float {
     fn into(self) -> f32 {
         match self.1 {
             Endian::Big => f32::from_be_bytes(self.0.to_be_bytes()),
             Endian::Little => f32::from_le_bytes(self.0.to_le_bytes()),
         }
+    }
+}
+
+impl From<f64> for Double {
+    fn from(dbl: f64) -> Self {
+        Self(u64::from_be_bytes(dbl.to_be_bytes()), Endian::Big)
     }
 }
 
@@ -100,6 +113,12 @@ pub enum Byml {
     Int64(i64),
     UInt64(u64),
     Double(Double),
+}
+
+impl Default for Byml {
+    fn default() -> Self {
+        Self::Null
+    }
 }
 
 impl PartialEq for Byml {
@@ -319,28 +338,40 @@ impl Byml {
 mod tests {
     use crate::Byml;
     use glob::glob;
-    use std::fs::read;
+    use std::fs::{read, read_to_string};
     use std::path::PathBuf;
 
     #[test]
     fn parse_byml() {
-        let data = read("test/ActorInfo.product.sbyml").unwrap();
+        let data = read("test/ActorInfo.product.byml").unwrap();
         let actorinfo = Byml::from_binary(&data).unwrap();
         println!("{:?}", actorinfo["Actors"][1]);
         assert_eq!(actorinfo["Actors"].as_array().unwrap().len(), 7934);
-        let data = read("test/A-1_Static.mubin").unwrap();
+        let data = read("test/A-1_Static.mubin.byml").unwrap();
         Byml::from_binary(&data).unwrap();
     }
 
     #[test]
     fn binary_roundtrip() {
-        for file in glob("test/*.*").unwrap() {
+        for file in glob("test/*.?b*").unwrap() {
             let good_file: PathBuf = file.unwrap();
             let data = read(&good_file).unwrap();
             let byml = Byml::from_binary(&data).unwrap();
             let new_byml =
                 Byml::from_binary(&byml.to_binary(crate::Endian::Little, 2).unwrap()).unwrap();
             assert_eq!(byml, new_byml);
+        }
+    }
+
+    #[test]
+    fn parse_yaml() {
+        for file in glob("test/*.yml").unwrap() {
+            let good_file: PathBuf = file.unwrap();
+            let text = read_to_string(&good_file).unwrap();
+            let byml = Byml::from_text(&text).unwrap();
+            let binary = read(good_file.with_extension("byml")).unwrap();
+            let binary_byml = Byml::from_binary(&binary).unwrap();
+            assert_eq!(byml, binary_byml);
         }
     }
 }

@@ -158,7 +158,7 @@ impl<R: Read + Seek> BymlParser<'_, R> {
             NodeType::Int => Byml::Int(self.read::<i32>()?),
             NodeType::UInt => Byml::UInt(self.read::<u32>()?),
             NodeType::Float => Byml::Float(crate::Float(self.read::<u32>()?, self.endian.into())),
-            NodeType::Bool => Byml::Bool(self.read::<u8>()? == 1),
+            NodeType::Bool => Byml::Bool(self.read::<u32>()? != 0),
             NodeType::Array => {
                 let offset = self.read::<u32>()?;
                 self.parse_array(offset)?
