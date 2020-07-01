@@ -9,6 +9,8 @@ pub enum EmitError {
 }
 
 impl Byml {
+    /// Serialize the document to a YAML string. The YAML output is fully compatible with the `oead`
+    /// and `byml` Python libraries.
     pub fn to_text(&self) -> Result<String, Box<dyn std::error::Error>> {
         let mut text = String::new();
         BymlEmitter::new(&mut text).dump(&self)?;
@@ -45,7 +47,6 @@ struct BymlEmitter<'a> {
 
 pub type EmitResult = Result<(), EmitError>;
 
-// from serialize::json
 fn write_binary(wr: &mut dyn fmt::Write, v: &str) -> Result<(), fmt::Error> {
     let mut start = 0;
 
@@ -177,8 +178,6 @@ impl<'a> BymlEmitter<'a> {
     }
 
     pub fn dump(&mut self, doc: &Byml) -> EmitResult {
-        // write DocumentStart
-        writeln!(self.writer, "---")?;
         self.level = -1;
         self.emit_node(doc)
     }
@@ -288,10 +287,6 @@ impl<'a> BymlEmitter<'a> {
         Ok(())
     }
 
-    /// Emit a yaml as a hash or array value: i.e., which should appear
-    /// following a ":" or "-", either after a space, or on a new line.
-    /// If `inline` is true, then the preceding characters are distinct
-    /// and short enough to respect the compact flag.
     fn emit_val(&mut self, inline: bool, val: &Byml) -> EmitResult {
         match *val {
             Byml::Array(ref v) => {
@@ -356,14 +351,8 @@ fn need_quotes(string: &str) -> bool {
             _ => false,
         })
         || [
-            // http://yaml.org/type/bool.html
-            // Note: 'y', 'Y', 'n', 'N', is not quoted deliberately, as in libyaml. PyYAML also parse
-            // them as string, not booleans, although it is violating the YAML 1.1 specification.
-            // See https://github.com/dtolnay/serde-yaml/pull/83#discussion_r152628088.
             "yes", "Yes", "YES", "no", "No", "NO", "True", "TRUE", "true", "False", "FALSE",
-            "false", "on", "On", "ON", "off", "Off", "OFF",
-            // http://yaml.org/type/null.html
-            "null", "Null", "NULL", "~",
+            "false", "on", "On", "ON", "off", "Off", "OFF", "null", "Null", "NULL", "~",
         ]
         .contains(&string)
         || string.starts_with('.')

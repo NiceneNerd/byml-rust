@@ -27,26 +27,57 @@ impl From<std::io::Error> for WriteError {
 }
 
 impl Byml {
+    /// Serialize the document to binary data with the specified endianness and version. Only hash,
+    /// array, or null nodes can be used.
     pub fn to_binary(&self, endian: Endian, version: u16) -> Result<Vec<u8>, WriteError> {
         let mut buf: Vec<u8> = Vec::new();
         self.write_binary(&mut Cursor::new(&mut buf), endian, version)?;
         Ok(buf)
     }
 
+    /// Serialize the document to binary data with the specified endianness and version and yaz0
+    /// compress it. Only hash, array, or null nodes can be used.
+    pub fn to_compressed_binary(
+        &self,
+        endian: Endian,
+        version: u16,
+    ) -> Result<Vec<u8>, WriteError> {
+        let mut buf: Vec<u8> = Vec::new();
+        let mut writer = Cursor::new(&mut buf);
+        let yaz_writer = yaz0::Yaz0Writer::new(&mut writer);
+        match yaz_writer.compress_and_write(
+            &self.to_binary(endian, version)?,
+            yaz0::CompressionLevel::Lookahead { quality: 7 },
+        ) {
+            Ok(()) => Ok(buf),
+            Err(e) => Err(WriteError(format!("{}", e))),
+        }
+    }
+
+    /// Write the binary serialized BYML document to a writer with the specified endianness and
+    /// version. Only hash, array, or null nodes can be used.
     pub fn write_binary<W: Write + Seek>(
         &self,
         writer: &mut W,
         endian: Endian,
         version: u16,
     ) -> WriteResult {
-        if version > 4 {
+        if version > 4 || version < 2 {
             return Err(
-                WriteError(format!("Version {} unsupported, expected 1-4", version)).into(),
+                WriteError(format!("Version {} unsupported, expected 2-4", version)).into(),
             );
         }
-        let mut byml_writer = BymlWriter::new(writer, self, endian.into(), version);
-        byml_writer.write_doc()?;
-        Ok(())
+        match self {
+            Byml::Array(_) | Byml::Hash(_) | Byml::Null => {
+                let mut byml_writer = BymlWriter::new(writer, self, endian.into(), version);
+                byml_writer.write_doc()?;
+                Ok(())
+            }
+            _ => Err(WriteError(format!(
+                "Can only serialize array, hash, or null nodes, found {:?}",
+                self.get_type()
+            ))),
+        }
     }
 }
 
