@@ -374,4 +374,16 @@ mod tests {
             assert_eq!(byml, binary_byml);
         }
     }
+
+    #[test]
+    fn yaml_roundtrip() {
+        for file in glob("test/*.yml").unwrap() {
+            let good_file: PathBuf = file.unwrap();
+            let data = read_to_string(&good_file).unwrap();
+            let byml = Byml::from_text(&data).unwrap();
+            let new_data = byml.to_text().unwrap();
+            let new_byml = Byml::from_text(&new_data).unwrap();
+            assert_eq!(byml, new_byml);
+        }
+    }
 }
