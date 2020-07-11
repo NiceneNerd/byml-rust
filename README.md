@@ -1,5 +1,9 @@
 # Nintendo BYML (binary YAML) library in Rust
 
+[![crates.io](https://img.shields.io/crates/v/byml)](https://crates.io/crates/byml)
+[![api](https://img.shields.io/badge/api-rustdoc-558b2f)](https://docs.rs/byml/)
+[![license](https://img.shields.io/crates/l/byml)](https://spdx.org/licenses/MIT.html)
+
 A simple to use library for reading, writing, and converting Nintendo binary YAML (BYML) files in
 Rust. Supports BYML versions 2-4, (v2 used in *The Legend of Zelda: Breath of the Wild*). Can
 convert from BYML to readable, editable YAML and back.
