@@ -136,25 +136,40 @@ impl Into<f64> for &Double {
 
 /// Represents a Nintendo binary YAML (BYML) document or node. A `Byml` will usually be constructed
 /// from binary data or a YAML string, e.g.
-/// ```ignore
+/// ```
+/// # use byml::Byml;
+/// # use std::{fs::read, error::Error};
+/// # fn docttest() -> Result<(), Box<dyn Error>> {
 /// let buf: Vec<u8> = std::fs::read("A-1_Static.smubin")?;
 /// let map_unit = Byml::from_binary(&buf)?;
 /// let text: String = std::fs::read_to_string("A-1_Static.yml")?;
 /// let map_unit2 = Byml::from_text(&text)?;
-/// assert_eq(map_unit, map_unit2);
+/// assert_eq!(map_unit, map_unit2);
+/// # Ok(())
+/// # }
 /// ```
 /// You can also easily serialize to binary or a YAML string.
-/// ```ignore
+/// ```
+/// # use byml::{Byml, Endian};
+/// # fn docttest() -> Result<(), Box<dyn std::error::Error>> {
 /// let buf: Vec<u8> = std::fs::read("A-1_Static.smubin")?;
 /// let map_unit = Byml::from_binary(&buf)?;
 /// std::fs::write("A-1_Static.yml", &map_unit.to_text()?)?;
 /// std::fs::write("A-1_Static.copy.mubin", &map_unit.to_binary(Endian::Big, 2)?)?;
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// A number of convenience getters are available which return a result for a variant value:
-/// ```ignore
+/// ```
+/// # use byml::Byml;
+/// # use std::collections::BTreeMap;
+/// # fn docttest() -> Result<(), Box<dyn std::error::Error>> {
+/// # let some_data = b"";
 /// let doc = Byml::from_binary(&some_data)?;
 /// let hash: &BTreeMap<String, Byml> = doc.as_hash()?;
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// Most of the node types are fairly self-explanatory. Arrays are implemented as `Vec<Byml>`, and
@@ -164,11 +179,15 @@ impl Into<f64> for &Double {
 ///
 /// For convenience, a `Byml` *known* to be an array or hash node can be indexed. **Panics if the
 /// node has the wrong type or if the index is not found**.
-/// ```ignore
+/// ```
+/// # use byml::Byml;
+/// # fn docttest() -> Result<(), Box<dyn std::error::Error>> {
 /// let buf: Vec<u8> = std::fs::read("ActorInfo.product.sbyml")?;
 /// let actor_info = Byml::from_binary(&buf)?;
-/// assert_eq(actor_info["Actors"].as_array()?.len(), 7934);
-/// assert_eq(actor_info["Hashes"][0].as_int(), 31119);
+/// assert_eq!(actor_info["Actors"].as_array()?.len(), 7934);
+/// assert_eq!(actor_info["Hashes"][0].as_int()?, &31119);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Debug, Clone, Eq, Hash)]
 pub enum Byml {
@@ -226,19 +245,19 @@ impl PartialEq for Byml {
                 Err(_) => false,
             },
             Byml::Int(v) => match other.as_int() {
-                Ok(v2) => v == v2,
+                Ok(v2) => v == &v2,
                 Err(_) => false,
             },
             Byml::Int64(v) => match other.as_int64() {
-                Ok(v2) => v == v2,
+                Ok(v2) => v == &v2,
                 Err(_) => false,
             },
             Byml::UInt(v) => match other.as_uint() {
-                Ok(v2) => v == v2,
+                Ok(v2) => v == &v2,
                 Err(_) => false,
             },
             Byml::UInt64(v) => match other.as_uint64() {
-                Ok(v2) => v == v2,
+                Ok(v2) => v == &v2,
                 Err(_) => false,
             },
             Byml::String(v) => match other.as_string() {
@@ -365,34 +384,34 @@ impl Byml {
         }
     }
 
-    /// Returns a result with a reference to the inner i32 or a type error
-    pub fn as_int(&self) -> Result<&i32, TypeError> {
+    /// Returns a result with the inner i32 value or a type error
+    pub fn as_int(&self) -> Result<i32, TypeError> {
         match self {
-            Byml::Int(v) => Ok(&v),
+            Byml::Int(v) => Ok(*v),
             _ => Err(TypeError),
         }
     }
 
-    /// Returns a result with a reference to the inner i64 or a type error
-    pub fn as_int64(&self) -> Result<&i64, TypeError> {
+    /// Returns a result with the inner i64 value or a type error
+    pub fn as_int64(&self) -> Result<i64, TypeError> {
         match self {
-            Byml::Int64(v) => Ok(&v),
+            Byml::Int64(v) => Ok(*v),
             _ => Err(TypeError),
         }
     }
 
-    /// Returns a result with a reference to the inner u32 or a type error
-    pub fn as_uint(&self) -> Result<&u32, TypeError> {
+    /// Returns a result with the inner u32 value or a type error
+    pub fn as_uint(&self) -> Result<u32, TypeError> {
         match self {
-            Byml::UInt(v) => Ok(&v),
+            Byml::UInt(v) => Ok(*v),
             _ => Err(TypeError),
         }
     }
 
-    /// Returns a result with a reference to the inner u64 or a type error
-    pub fn as_uint64(&self) -> Result<&u64, TypeError> {
+    /// Returns a result with the inner u64 value or a type error
+    pub fn as_uint64(&self) -> Result<u64, TypeError> {
         match self {
-            Byml::UInt64(v) => Ok(&v),
+            Byml::UInt64(v) => Ok(*v),
             _ => Err(TypeError),
         }
     }
@@ -414,7 +433,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner BYML hash or a type error
-    pub fn as_mut_hash(&mut self) -> Result<&BTreeMap<String, Byml>, TypeError> {
+    pub fn as_mut_hash(&mut self) -> Result<&mut BTreeMap<String, Byml>, TypeError> {
         match self {
             Byml::Hash(v) => Ok(v),
             _ => Err(TypeError),
@@ -422,7 +441,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner BYML array or a type error
-    pub fn as_mut_array(&mut self) -> Result<&Vec<Byml>, TypeError> {
+    pub fn as_mut_array(&mut self) -> Result<&mut Vec<Byml>, TypeError> {
         match self {
             Byml::Array(v) => Ok(v),
             _ => Err(TypeError),
@@ -430,7 +449,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner binary data or a type error
-    pub fn as_mut_binary(&mut self) -> Result<&Vec<u8>, TypeError> {
+    pub fn as_mut_binary(&mut self) -> Result<&mut Vec<u8>, TypeError> {
         match self {
             Byml::Binary(v) => Ok(v),
             _ => Err(TypeError),
@@ -438,7 +457,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner string or a type error
-    pub fn as_mut_string(&mut self) -> Result<&String, TypeError> {
+    pub fn as_mut_string(&mut self) -> Result<&mut String, TypeError> {
         match self {
             Byml::String(v) => Ok(v),
             _ => Err(TypeError),
@@ -446,7 +465,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner i32 or a type error
-    pub fn as_mut_int(&mut self) -> Result<&i32, TypeError> {
+    pub fn as_mut_int(&mut self) -> Result<&mut i32, TypeError> {
         match self {
             Byml::Int(v) => Ok(v),
             _ => Err(TypeError),
@@ -454,7 +473,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner i64 or a type error
-    pub fn as_mut_int64(&mut self) -> Result<&i64, TypeError> {
+    pub fn as_mut_int64(&mut self) -> Result<&mut i64, TypeError> {
         match self {
             Byml::Int64(v) => Ok(v),
             _ => Err(TypeError),
@@ -462,7 +481,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner u32 or a type error
-    pub fn as_mut_uint(&mut self) -> Result<&u32, TypeError> {
+    pub fn as_mut_uint(&mut self) -> Result<&mut u32, TypeError> {
         match self {
             Byml::UInt(v) => Ok(v),
             _ => Err(TypeError),
@@ -470,7 +489,7 @@ impl Byml {
     }
 
     /// Returns a result with a mutable reference to the inner u64 or a type error
-    pub fn as_mut_uint64(&mut self) -> Result<&u64, TypeError> {
+    pub fn as_mut_uint64(&mut self) -> Result<&mut u64, TypeError> {
         match self {
             Byml::UInt64(v) => Ok(v),
             _ => Err(TypeError),

@@ -63,9 +63,10 @@ impl Byml {
         version: u16,
     ) -> WriteResult {
         if version > 4 || version < 2 {
-            return Err(
-                WriteError(format!("Version {} unsupported, expected 2-4", version)).into(),
-            );
+            return Err(WriteError(format!(
+                "Version {} unsupported, expected 2-4",
+                version
+            )));
         }
         match self {
             Byml::Array(_) | Byml::Hash(_) | Byml::Null => {
@@ -282,12 +283,12 @@ impl<W: Write + Seek> BymlWriter<'_, W> {
             root_node_offset: 0x0,
         };
         self.writer.seek(SeekFrom::Start(0x10))?;
-        if self.keys.len() > 0 {
+        if !self.keys.is_empty() {
             header.hash_table_offset = self.writer.stream_position()? as u32;
             self.write_string_table(&self.keys.clone())?;
             self.align_cursor()?;
         }
-        if self.strings.len() > 0 {
+        if !self.strings.is_empty() {
             header.string_table_offset = self.writer.stream_position()? as u32;
             self.write_string_table(&self.strings.clone())?;
             self.align_cursor()?;
@@ -371,7 +372,7 @@ impl<W: Write + Seek> BymlWriter<'_, W> {
         Ok(())
     }
 
-    fn write_array(&mut self, array: &Vec<Byml>) -> WriteResult {
+    fn write_array(&mut self, array: &[Byml]) -> WriteResult {
         let start_pos = self.writer.stream_position()?;
         let mut after_nodes: IndexMap<usize, &Byml> = IndexMap::new();
         let array_node = ArrayNode {
@@ -466,7 +467,7 @@ impl BinWrite for U24 {
             binwrite::Endian::Little => LittleEndian::write_uint(&mut buf, self.0, 3),
             _ => unreachable!(),
         };
-        writer.write(&buf)?;
+        writer.write_all(&buf)?;
         Ok(())
     }
 }
