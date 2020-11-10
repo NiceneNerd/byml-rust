@@ -47,7 +47,7 @@ impl Byml {
         let yaz_writer = yaz0::Yaz0Writer::new(&mut writer);
         match yaz_writer.compress_and_write(
             &self.to_binary(endian, version)?,
-            yaz0::CompressionLevel::Lookahead { quality: 7 },
+            yaz0::CompressionLevel::Lookahead { quality: 10 },
         ) {
             Ok(()) => Ok(buf),
             Err(e) => Err(WriteError(format!("{}", e))),
