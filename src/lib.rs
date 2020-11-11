@@ -185,7 +185,7 @@ impl Into<f64> for &Double {
 /// let buf: Vec<u8> = std::fs::read("ActorInfo.product.sbyml")?;
 /// let actor_info = Byml::from_binary(&buf)?;
 /// assert_eq!(actor_info["Actors"].as_array()?.len(), 7934);
-/// assert_eq!(actor_info["Hashes"][0].as_int()?, &31119);
+/// assert_eq!(actor_info["Hashes"][0].as_int()?, 31119);
 /// # Ok(())
 /// # }
 /// ```
