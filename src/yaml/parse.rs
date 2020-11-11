@@ -20,6 +20,7 @@ impl Byml {
 
 type Hash = BTreeMap<String, Byml>;
 
+#[derive(Debug)]
 pub struct BymlLoader {
     docs: Vec<Byml>,
     doc_stack: Vec<(Byml, usize)>,
@@ -157,7 +158,10 @@ impl BymlLoader {
                     let cur_key = self.key_stack.last_mut().unwrap();
                     // current node is a key
                     if cur_key.as_bytes() == b"" {
-                        *cur_key = node.0.as_string().unwrap().clone();
+                        *cur_key = match node.0.as_string() {
+                            Ok(v) => v.clone(),
+                            Err(_) => node.0.as_int().unwrap().to_string(),
+                        };
                     // current node is a value
                     } else {
                         let mut newkey = String::new();
