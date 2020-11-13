@@ -21,7 +21,7 @@
 //!     println!("{}", actor["name"].as_string().unwrap());
 //! }
 //! // Dump to YAML
-//! std::fs::write("test/ActorInfo.yml", actor_info.to_text().unwrap()).unwrap();
+//! std::fs::write("test/ActorInfo.product.yml", actor_info.to_text().unwrap()).unwrap();
 //! ```
 use binread::BinRead;
 use std::collections::BTreeMap;
@@ -189,6 +189,7 @@ impl Into<f64> for &Double {
 /// # Ok(())
 /// # }
 /// ```
+#[allow(clippy::clippy::clippy::derive_hash_xor_eq)]
 #[derive(Debug, Clone, Eq, Hash)]
 pub enum Byml {
     Null,

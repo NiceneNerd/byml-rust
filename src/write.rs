@@ -2,6 +2,7 @@ use crate::{Byml, Endian, NodeType, U24};
 use binwrite::{BinWrite, WriterOption};
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use indexmap::{IndexMap, IndexSet};
+use rayon::prelude::*;
 use std::collections::{hash_map::DefaultHasher, BTreeMap};
 use std::error::Error;
 use std::hash::{Hash, Hasher};
@@ -177,7 +178,8 @@ struct BymlWriter<'a, W: Write + Seek> {
     written_nodes: IndexMap<u64, u32>,
 }
 
-fn calculate_hash<T: Hash>(t: &T) -> u64 {
+#[inline]
+fn calculate_hash(t: &Byml) -> u64 {
     let mut s = DefaultHasher::new();
     t.hash(&mut s);
     s.finish()
@@ -187,13 +189,13 @@ fn collect_strings(data: &Byml) -> IndexSet<String> {
     let mut strs: IndexSet<String> = IndexSet::new();
     match data {
         Byml::String(v) => {
-            strs.insert(v.to_string());
+            strs.insert(v.to_owned());
         }
-        Byml::Array(v) => strs.extend(v.iter().flat_map(|x: &Byml| collect_strings(x))),
-        Byml::Hash(v) => strs.extend(v.values().flat_map(|x: &Byml| collect_strings(x))),
+        Byml::Array(v) => strs.par_extend(v.par_iter().flat_map(|x: &Byml| collect_strings(x))),
+        Byml::Hash(v) => strs.par_extend(v.par_iter().flat_map(|(_, v)| collect_strings(v))),
         _ => (),
     };
-    strs.sort();
+    strs.par_sort();
     strs
 }
 
@@ -201,15 +203,13 @@ fn collect_keys(data: &Byml) -> IndexSet<String> {
     let mut keys: IndexSet<String> = IndexSet::new();
     match data {
         Byml::Hash(v) => {
-            keys.extend(v.keys().map(|x| x.to_string()));
-            for val in v.values() {
-                keys.extend(collect_keys(val))
-            }
+            keys.par_extend(v.par_iter().map(|(k, _)| k.to_owned()));
+            keys.par_extend(v.par_iter().flat_map(|(_, v)| collect_keys(v)))
         }
-        Byml::Array(v) => keys.extend(v.iter().flat_map(|x| collect_keys(x))),
+        Byml::Array(v) => keys.par_extend(v.par_iter().flat_map(|x| collect_keys(x))),
         _ => (),
     }
-    keys.sort();
+    keys.par_sort();
     keys
 }
 
@@ -231,6 +231,7 @@ impl<W: Write + Seek> BymlWriter<'_, W> {
         }
     }
 
+    #[inline]
     fn write<B: BinWrite>(&mut self, val: &B) -> WriteResult {
         val.write_options(self.writer, &self.opts)?;
         Ok(())
@@ -377,7 +378,7 @@ impl<W: Write + Seek> BymlWriter<'_, W> {
         let mut after_nodes: IndexMap<usize, &Byml> = IndexMap::new();
         let array_node = ArrayNode {
             count: U24(array.len() as u64),
-            types: array.iter().map(|x| x.get_type()).collect(),
+            types: array.par_iter().map(|x| x.get_type()).collect(),
         };
         let mut array_values = array
             .iter()

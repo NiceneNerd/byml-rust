@@ -147,7 +147,7 @@ impl MarkedEventReceiver for BymlLoader {
 }
 
 impl BymlLoader {
-    fn insert_new_node(&mut self, node: (Byml, usize)) {
+    fn insert_new_node(&mut self, mut node: (Byml, usize)) {
         if self.doc_stack.is_empty() {
             self.doc_stack.push(node);
         } else {
@@ -158,8 +158,8 @@ impl BymlLoader {
                     let cur_key = self.key_stack.last_mut().unwrap();
                     // current node is a key
                     if cur_key.as_bytes() == b"" {
-                        *cur_key = match node.0.as_string() {
-                            Ok(v) => v.clone(),
+                        *cur_key = match node.0.as_mut_string() {
+                            Ok(v) => std::mem::take(v),
                             Err(_) => node.0.as_int().unwrap().to_string(),
                         };
                     // current node is a value
