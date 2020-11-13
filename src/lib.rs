@@ -305,26 +305,17 @@ where
 impl Byml {
     /// Returns whether the node is an array or hash
     pub fn is_container(&self) -> bool {
-        match self {
-            Byml::Hash(_) | Byml::Array(_) => true,
-            _ => false,
-        }
+        matches! (self, Byml::Hash(_) | Byml::Array(_))
     }
 
     /// Returns whether the node is an inline value (`Int`, `UInt`, `Float`, or `Bool`)
     pub fn is_value(&self) -> bool {
-        match self {
-            Byml::Int(_) | Byml::UInt(_) | Byml::Float(_) | Byml::Bool(_) => true,
-            _ => false,
-        }
+        matches! (self, Byml::Int(_) | Byml::UInt(_) | Byml::Float(_) | Byml::Bool(_))
     }
 
     /// Do I even need to document this one?
     pub fn is_string(&self) -> bool {
-        match self {
-            Byml::String(_) => true,
-            _ => false,
-        }
+        matches! (self, Byml::String(_))
     }
 
     /// Gets the node type
@@ -499,10 +490,7 @@ impl Byml {
 
     /// Checks if the node is a null value
     pub fn is_null(&self) -> bool {
-        match self {
-            Byml::Null => true,
-            _ => false,
-        }
+        matches! (self, Byml::Null)
     }
 }
 

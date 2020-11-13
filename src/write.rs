@@ -63,7 +63,7 @@ impl Byml {
         endian: Endian,
         version: u16,
     ) -> WriteResult {
-        if version > 4 || version < 2 {
+        if !(2..=4).contains(&version) {
             return Err(WriteError(format!(
                 "Version {} unsupported, expected 2-4",
                 version
